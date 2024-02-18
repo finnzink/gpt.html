@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>gpt.html</title>
+<style>
+    body {
+        display: flex;
+        height: 100vh;
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background-color: #2c2c2c; /* Dark mode background */
+        color: #e0e0e0; /* Lighter text color for readability */
+    }
+    .sidebar {
+        display: flex;
+        flex-direction: column; /* Stack children vertically */
+        flex-shrink: 0;
+        width: 20%; /* Adjusted to 20% of the screen width */
+        background-color: #181818; /* Dark sidebar */
+        padding: 20px;
+        color: #e0e0e0; /* Lighter text color */
+        overflow-y: auto;
+    }
+    .chat-list {
+        list-style: none;
+        padding: 0;
+        overflow-y: auto; /* Allows scrolling for long lists */
+        flex-grow: 1; /* Takes up all available space, pushing api-key-input down */
+    }
+    .chat-list li {
+        border-radius: 5px;
+        padding: 10px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .chat-list li:hover, .chat-list li.active {
+        background-color: #2c2c2c; /* Highlight for hover and active items */
+    }
+    .chat-title {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        flex-grow: 1; /* Allows the title to take up the available space */
+        margin-right: 10px; /* Ensures space between the title and the delete button */
+    }
+    .delete-chat {
+        cursor: pointer;
+        color: #ffffff; /* Adjusting delete button color for visibility */
+        margin-left: 10px;
+    }
+    .new-chat-button, button {
+        border-radius: 5px;
+        padding: 10px 20px;
+        margin-right: 10px;
+        background-color: #333; /* Darker buttons */
+        color: white;
+        border: none;
+        cursor: pointer;
+        /* margin-bottom: 20px; */
+        line-height: 1;
+        height: 35px;
+    }
+    .chat-area {
+        flex-grow: 1;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        background-color: #000000; /* Dark background for chat area */
+    }
+    .messages {
+        flex-grow: 1;
+        overflow-y: auto;
+    }
+    .message-input {
+        display: flex; /* Aligns children (textarea and button) in a row */
+        /* padding: 10px 0;  */
+        align-items: flex-end;
+    }
+
+    textarea {
+        outline: none;
+        border-radius: 5px;
+        box-sizing: border-box;
+        flex-grow: 1; 
+        margin-right: 10px; /* Adds some space between the textarea and the button */
+        padding: 10px;
+        border: 1px solid #555; /* Darker border for input */
+        background-color: #000000; /* Darker background for textarea */
+        color: #e0e0e0; /* Lighter text color */
+        resize: none; /* Prevent manual resizing */
+    }
+    .api-key-input {
+        display: flex;
+        align-items: center; /* Ensures vertical alignment of children */
+        width: 100%; /* Ensures the container takes full width */
+    }
+
+    .api-key-input input {
+        flex-grow: 1; /* Makes the input expand to fill available space */
+        outline: none;
+        border-radius: 5px;
+        padding: 10px;
+        border: 1px solid #555;
+        background-color: #181818;
+        color: #e0e0e0;
+        margin-right: 10px; /* Ensures some space between input and the button */
+    }
+
+    #saveButton, .delete-key {
+        margin-left: auto; /* Pushes the button and the "X" to the right */
+    }
+
+    #delete-key {
+        margin-left: auto;
+        cursor: pointer;
+        /* Additional styling for the "X" as needed */
+    }
+    .chat-date-header {
+        padding-left: 10px;
+        font-size: 0.8em; /* Smaller text */
+        color: grey; /* Grey text */
+        margin-top: 10px; /* Add some space above the header */
+        margin-bottom: 5px; /* Add some space below the header */
+    }
+    .pre-container {
+    display: flex;
+    align-items: flex-start; /* Aligns items at the start of the container vertically */
+    position: relative;
+}
+
+.pre-container pre {
+        display: inline-block; /* Or 'inline', but 'inline-block' is often more practical */
+    white-space: pre-wrap;
+}
+
+.copy-btn {
+    cursor: pointer; /* Changes the cursor to pointer when hovering over the button */
+    align-self: flex-start; /* Aligns the button to the top of the container */
+    padding: 10px 5px; /* Optional: Adds some padding inside the button for better appearance */
+    /* Additional styling for the button as needed */
+}
+    .navigation {
+        font-family: monospace;
+        font-size: small;
+        color: grey;
+    }
+
+    .message-container:hover .edit-btn {
+        visibility: visible; /* Visible on hover */
+        opacity: 1; /* Fully opaque on hover */
+    }
+
+    .nav-btn, .edit-btn {
+        background-color: black; /* Black background for navigation buttons */
+        border: none; /* Optional: Removes default button border */
+        cursor: pointer; /* Changes cursor to pointer to indicate it's clickable */
+    }
+    .nav-btn {
+        font-weight: bolder;
+    }
+    .edit-btn {
+        visibility: hidden; /* Initially hidden but occupies space */
+        opacity: 0; /* Make them transparent */
+        transition: visibility 0s, opacity 0.2s linear; /* Smooth transition for opacity */
+        font-size:xx-small;
+    }
+
+</style>
+
+
+</head>
+<body>
+
+<div class="sidebar">
+    <button class="new-chat-button" onclick="createNewChat()">Create new chat</button>
+    <ul class="chat-list" id="chatList">
+        <!-- Chat list will be populated here -->
+    </ul>
+    <div class="api-key-input">
+        <input type="text" id="apiKey" placeholder="Enter OpenAI API Key">
+        <button onclick="saveApiKey()" id="saveButton">Save</button>
+        <div id="apiKeyAddedMessage" style="display: none;">
+            API Key Added
+        </div>
+        <button id="delete-key" onclick="removeApiKey()" style="display: none;">Delete</span>
+    </div>      
+</div>
+
+<div class="chat-area">
+    <div class="messages" id="messages">
+        <!-- Messages will be displayed here -->
+    </div>
+    <div class="message-input">
+        <textarea id="messageInput" placeholder="Type a message..." oninput="autoGrow(this)" onkeydown="handleInput(event)"></textarea>
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script>
+    let chats = JSON.parse(localStorage.getItem('chats')) || [];
+    let activeChat = 0;
+
+    function saveChats() {
+        const maxLocalStorageSize = 5 * 1024 * 1024; // Approximate size in bytes (5MB, may vary by browser)
+        let dataToSave = JSON.stringify(chats);
+
+        // Check if dataToSave size exceeds the maximum local storage size
+        while (new Blob([dataToSave]).size > maxLocalStorageSize) {
+            if (chats.length > 0) {
+                // Remove the last chat from the array
+                chats.pop();
+                // Update dataToSave with the modified chats array
+                dataToSave = JSON.stringify(chats);
+            } else {
+                // If there are no more chats to remove, break the loop to avoid an infinite loop
+                console.error('No more chats to remove, but data still exceeds local storage limit.');
+                break;
+            }
+        }
+
+        // Save the modified chats array to local storage
+        localStorage.setItem('chats', dataToSave);
+    }
+
+    function saveApiKey() {
+        const apiKey = document.getElementById('apiKey').value;
+        localStorage.setItem('openAIKey', apiKey);
+        showApiKeyAddedMessage();
+    }
+
+    function removeApiKey() {
+        localStorage.removeItem('openAIKey');
+        showInputField();
+    }
+
+    function showApiKeyAddedMessage() {
+        document.getElementById('apiKey').style.display = 'none';
+        document.getElementById('saveButton').style.display = 'none';
+        document.getElementById('apiKeyAddedMessage').style.display = 'block';
+        document.getElementById('delete-key').style.display = 'block';
+    }
+
+    function showInputField() {
+        document.getElementById('apiKey').style.display = 'block';
+        document.getElementById('saveButton').style.display = 'block';
+        document.getElementById('apiKeyAddedMessage').style.display = 'none';
+        document.getElementById('delete-key').style.display = 'none';
+    }
+
+    function compileMessageHistory(node) {
+        const history = [];
+
+        // Return an empty history if there's nothing to compile
+        if (!node || (!node.children && !node.content)) {
+            return history;
+        }
+
+        // Include the node's own content if it's defined, regardless of children or edits
+        if (node.content !== undefined) {
+            history.push({ role: node.role, content: node.content });
+        }
+
+        // Check if there's a current_edit and it points to a valid child
+        if (node.children && node.current_edit !== undefined && node.current_edit >= 0 && node.children[node.current_edit]) {
+            const currentEdit = node.children[node.current_edit];
+
+            // Recursively process the current edit (if it's different from the node's own content)
+            if (!node.content || (currentEdit.content !== node.content)) {
+                history.push(...compileMessageHistory(currentEdit));
+            }
+        }
+        return history;
+    }
+
+
+
+
+    async function sendToOpenAI(userMessage) {
+        const apiKey = localStorage.getItem('openAIKey');
+        if (!apiKey) {
+            alert('OpenAI API key is not set.');
+            return;
+        }
+
+        // Prepare the chat history from the active chat
+        const messages = [
+            { role: "system", content: "You are a helpful assistant." },
+            ...compileMessageHistory(chats[activeChat]),
+            { role: "user", content: userMessage }
+        ];
+
+        // Function to find the last user message node recursively
+        function findLastUserMessageNode(node) {
+            if (node.children && node.children.length > 0) {
+                return findLastUserMessageNode(node.children[node.current_edit]);
+            } else {
+                return node;
+            }
+        }
+
+        // Find the last user message node to append the assistant's response
+        const chat = chats[activeChat];
+        const userMessageNode = findLastUserMessageNode(chat);
+
+        // Prepare a placeholder for the assistant's response under the last user message node
+        if (!userMessageNode.children) {
+            userMessageNode.children = [];
+        }
+        userMessageNode.children.push({ content: "", children: [], role: "assistant", current_edit: 0 });
+
+        try {
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-4",
+                    messages: messages,
+                    stream: true
+                })
+            });
+
+            if (!response.body) {
+                throw new Error('No response body');
+            }
+
+            const reader = response.body.getReader();
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const textChunk = new TextDecoder().decode(value);
+                const dataLines = textChunk.split('\ndata: ').filter(line => line.trim());
+
+                dataLines.forEach(line => {
+                    if (line.startsWith("[DONE]")) return;
+                    const dataChunk = JSON.parse(line.startsWith('data: ') ? line.substring(6) : line);
+                    if (dataChunk.choices && dataChunk.choices.length > 0 && dataChunk.choices[0].delta && dataChunk.choices[0].delta.content) {
+                        // Update the assistant's response content within the userMessageNode
+                        const assistantResponseNode = userMessageNode.children.slice(-1)[0];
+                        assistantResponseNode.content += dataChunk.choices[0].delta.content;
+                        saveChats(); // Save changes to local storage
+                        renderChat(activeChat); // Update UI
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error sending message to OpenAI:', error);
+            alert('Failed to send message to OpenAI. See console for details.');
+        }
+    }
+
+
+
+    async function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const userMessage = input.value.trim();
+        if (activeChat === null || userMessage === '') return;
+
+        const currentChat = chats[activeChat];
+
+        if (currentChat.current_edit === -1) {
+            // Handle the first message in a new chat
+            currentChat.children.push({
+                content: userMessage,
+                children: [],
+                role: 'user',
+                current_edit: 0
+            });
+            currentChat.current_edit = 0; // Set the current edit to point to the first message
+        } else {
+            let currentEdit = currentChat.children[currentChat.current_edit];
+            while (currentEdit.children.length > 0) {
+                currentEdit = currentEdit.children[currentEdit.current_edit];
+            }
+            // Add the new message as a child of the most deeply nested message
+            currentEdit.children.push({
+                content: userMessage,
+                children: [],
+                role: 'user',
+                current_edit: 0
+            });
+        }
+
+        currentChat.timestamp = new Date().toISOString(); // Update timestamp
+        saveChats(); // Persist changes
+        input.value = ''; // Clear input field
+        renderChatList();
+        renderChat(0); // Refresh the chat UI
+
+        await sendToOpenAI(userMessage); // Trigger the assistant's response
+    }
+
+
+    function createNewChat() {
+        const newChat = {
+            children: [], // Start with an empty edits array
+            current_edit: -1, // Use -1 to indicate that there's no current edit yet
+            timestamp: new Date().toISOString(), // Set the creation time as the current timestamp
+            role: "root"
+        };
+
+        // Add the new chat to the chats array
+        chats.push(newChat);
+
+        saveChats(); // Save the updated chats array
+        renderChatList(); // Update the chat list UI with the new chat
+        renderChat(0); // Render the new chat by passing its index
+    }
+
+
+    function deleteChat(chatId, event) {
+        event.stopPropagation();
+        // Convert chatId to a number since it's used as an index
+        const chatIndex = parseInt(chatId, 10);
+        // Remove the chat from the array using splice
+        if (chatIndex > -1) {
+            chats.splice(chatIndex, 1);
+        }
+        saveChats();
+        renderChatList();
+        // Check if the deleted chat was the active chat
+        if (activeChat === chatId) {
+            document.getElementById('messages').innerHTML = '';
+            // Reset activeChat or set it to a new value
+            activeChat = chats.length > 0 ? 0 : null; // Set to 0 or null if no chats are left
+            if (activeChat !== null) {
+                renderChat(activeChat);
+            }
+        }
+    }
+
+    function scrollToBottom() {
+        const messagesDiv = document.getElementById('messages');
+        messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to bottom
+    }
+
+    function renderChat(chatId) {
+        activeChat = chatId;
+        const messagesDiv = document.getElementById('messages');
+        messagesDiv.innerHTML = '';
+
+        const traverseChat = (node, parent = null) => {
+            parent = parent == null ? chats[chatId] : parent;
+            if (!node) return;
+
+            const messageContainer = document.createElement('div');
+            messageContainer.classList.add('message-container');
+            messageContainer.style.borderLeft = '2px solid';
+            messageContainer.style.borderLeftColor = node.role === 'user' ? 'white' : 'blue';
+            messageContainer.style.paddingLeft = '10px';
+
+            const roleContainer = document.createElement('span');
+            roleContainer.style.display = 'flex';
+            roleContainer.style.alignItems = 'center';
+
+            const roleP = document.createElement('p');
+            roleP.style.fontWeight = 'bold';
+            roleP.style.marginTop = '0px';
+            roleP.style.marginBottom = '0px';
+            roleP.style.display = 'inline';
+
+            const roleText = document.createTextNode(node.role);
+            roleP.appendChild(roleText);
+            roleContainer.appendChild(roleP);
+
+            const messageP = document.createElement('p');
+            messageP.style.marginTop = '5px';
+
+            // Temporarily replace content in pre blocks to avoid transforming it.
+            const preReplacements = [];
+            const tempPlaceholder = "PRE_BLOCK_PLACEHOLDER";
+            messageP.innerHTML = node.content.replace(/```(\w+)?\n?([\s\S]*?)(```|$)/g, function(match, lang, code, end) {
+                preReplacements.push('<div class="pre-container"><pre>' + code + '</pre><span class="copy-btn">📄</span></div>');
+                return tempPlaceholder; // Use a placeholder to later replace with actual pre block content.
+            });
+
+            // Transformations outside of pre blocks: newlines to <br>, ` for <code>, and ** for <b>.
+            messageP.innerHTML = messageP.innerHTML
+                .replace(/\n/g, '<br>') // Newlines to <br>
+                .replace(/`(.*?)`/g, '<code>$1</code>') // `code` to <code>code</code>
+                .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>'); // **bold** to <b>bold</b>
+
+            // Re-insert pre blocks
+            preReplacements.forEach((replacement, index) => {
+                messageP.innerHTML = messageP.innerHTML.replace(tempPlaceholder, replacement);
+            });
+
+            messageContainer.appendChild(roleContainer);
+            messageContainer.appendChild(messageP);
+
+            if (node.role === 'user') {
+                const totalSiblings = parent.children.length;
+                const currentEdit = parent.current_edit + 1;
+
+                const navigationSection = document.createElement('span');
+
+                if (totalSiblings > 1) {
+                    navigationSection.classList.add('navigation');
+                    navigationSection.innerHTML = `<span class="nav-btn prev">＜</span>${currentEdit}/${totalSiblings}<span class="nav-btn next">＞</span><span class="edit-btn">✏️</span>`;
+                    roleContainer.appendChild(navigationSection);
+
+                    const prevBtn = navigationSection.querySelector('.prev');
+                    const nextBtn = navigationSection.querySelector('.next');
+
+                    prevBtn.addEventListener('click', function() {
+                        if (parent && parent.current_edit > 0) {
+                            parent.current_edit -= 1;
+                            renderChat(chatId);
+                        }
+                    });
+
+                    nextBtn.addEventListener('click', function() {
+                        if (parent && parent.current_edit < parent.children.length - 1) {
+                            parent.current_edit += 1;
+                            renderChat(chatId);
+                        }
+                    });
+                } else {
+                    navigationSection.classList.add('navigation');
+                    navigationSection.innerHTML = `<span class="edit-btn">✏️</span>`;
+                    roleContainer.appendChild(navigationSection);
+                }
+
+                const editBtn = navigationSection.querySelector('.edit-btn');
+                editBtn.addEventListener('click', function() {
+
+                    // Check if edit is already in progress
+                    if (editBtn.getAttribute('data-editing') === 'true') {
+                        return; // Exit the function if already editing
+                    }
+                    editBtn.setAttribute('data-editing', 'true'); // Mark editing as in progress
+
+
+                    messageP.style.display = 'none'; // Hide the existing message content
+
+                    const textarea = document.createElement('textarea');
+                    textarea.classList.add('edit-area');
+                    textarea.value = node.content;
+                    textarea.rows = 4; // Adjust the size as needed
+                    textarea.style.width = '100%'; // Adjust the width as needed
+                    messageContainer.insertBefore(textarea, messageP); // Insert textarea before the hidden messageP
+
+                    // Call autoGrow immediately to adjust initial height based on content
+                    autoGrow(textarea);
+
+                    // Add an 'input' event listener to the textarea for auto-growing
+                    textarea.addEventListener('input', function() {
+                        autoGrow(textarea);
+                    });
+
+                    const buttonContainer = document.createElement('div');
+                    buttonContainer.style.display = 'flex';
+                    buttonContainer.style.marginBottom = '10px'; // Add some space above the button container
+
+
+                    const saveBtn = document.createElement('button');
+                    saveBtn.textContent = 'Send';
+                    saveBtn.classList.add('message-input');
+
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.textContent = 'Cancel';
+                    cancelBtn.classList.add('message-input', 'cancel-btn');
+
+                    // Append buttons to the button container
+                    buttonContainer.appendChild(saveBtn);
+                    buttonContainer.appendChild(cancelBtn);
+
+                    // Append the button container to the messageContainer
+                    messageContainer.appendChild(buttonContainer);
+
+                    saveBtn.addEventListener('click', function() {
+                        const updatedContent = textarea.value;
+                        parent.children.push({
+                            content: updatedContent,
+                            children: [],
+                            role: 'user',
+                            current_edit: 0
+                        });
+                        parent.current_edit = parent.children.length - 1;
+                        sendToOpenAI(updatedContent);
+                        renderChat(chatId);
+                    });
+                    cancelBtn.addEventListener('click', function() {
+                        textarea.remove(); // Remove the textarea
+                        saveBtn.remove(); // Remove the save button
+                        cancelBtn.remove(); // Remove the cancel button
+                        messageP.style.display = ''; // Restore the original message content
+                        editBtn.removeAttribute('data-editing'); // Re-enable editing after cancel
+                    });
+                });
+            }
+
+            messagesDiv.appendChild(messageContainer);
+
+            if (node.children && node.children.length > 0) {
+                const currentChildIndex = node.current_edit !== undefined ? node.current_edit : 0;
+                const currentChild = node.children[currentChildIndex];
+                if (currentChild) {
+                    traverseChat(currentChild, node);
+                }
+            }
+        };
+
+        traverseChat(chats[activeChat].children[chats[activeChat].current_edit]);
+
+        scrollToBottom();
+        highlightActiveChat(chatId);
+    }
+
+
+    function highlightActiveChat(chatId) {
+        const chatIdStr = String(chatId); // Convert chatId to string
+        document.querySelectorAll('.chat-list li').forEach(li => {
+            if (li.getAttribute('data-chat-id') === chatIdStr) { // Compare as strings
+                li.classList.add('active');
+            } else {
+                li.classList.remove('active');
+            }
+        });
+    }
+
+    function renderChatList() {
+        const chatList = document.getElementById('chatList');
+        chatList.innerHTML = ''; // Clear existing chat list
+
+        // Sort chats by timestamp in descending order
+        chats.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+
+        let lastCategory = null;
+
+        chats.forEach((chatObj, index) => {
+            const chatDate = new Date(chatObj.timestamp);
+            let category;
+
+            if (chatDate.toDateString() === today.toDateString()) {
+                category = "Today";
+            } else if (chatDate.toDateString() === yesterday.toDateString()) {
+                category = "Yesterday";
+            } else {
+                category = chatDate.toLocaleDateString();
+            }
+
+            // Check if we need to render a new category header
+            if (category !== lastCategory) {
+                const header = document.createElement('div');
+                header.textContent = category;
+                header.classList.add('chat-date-header'); // Use this class to style the header
+                chatList.appendChild(header);
+                lastCategory = category;
+            }
+
+            // Chat item
+            const chatLi = document.createElement('li');
+            chatLi.classList.add('chat-item'); // Add class for styling
+
+            // Chat title
+            const chatTitle = document.createElement('span'); // Create a span for chat title
+            chatTitle.classList.add('chat-title'); // Add class for styling
+
+            // Set chat title text content
+            if (chatObj.children.length > 0) {
+                const firstMessage = chatObj.children[0].content;
+                chatTitle.textContent = firstMessage.length > 50 ? firstMessage.substring(0, 47) + '...' : firstMessage;
+            } else {
+                chatTitle.textContent = "New chat";
+            }
+
+            chatLi.appendChild(chatTitle);
+
+            // Use the index directly as part of the identifier
+            const chatIndex = `${index}`;
+
+            // Set data attributes and onclick for chat item
+            chatLi.setAttribute('data-chat-id', chatIndex);
+            chatLi.setAttribute('onclick', `renderChat('${index}')`);
+
+            // Delete button
+            const deleteBtn = document.createElement('span');
+            deleteBtn.textContent = 'X';
+            deleteBtn.classList.add('delete-chat', 'chat-delete-btn'); // Add classes for styling
+            deleteBtn.setAttribute('onclick', `deleteChat('${index}', event)`);
+            chatLi.appendChild(deleteBtn);
+
+            // Append chat item to list
+            chatList.appendChild(chatLi);
+        });
+    }
+
+    function handleInput(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault(); // Prevent default "Enter" behavior
+            sendMessage();
+        }
+    }
+
+    function autoGrow(element) {
+        element.style.height = '0px';
+        var newHeight = element.scrollHeight + 2 + 'px';
+        element.style.height = newHeight;
+    }
+
+    window.onload = function() {
+        if (chats.length == 0) {
+            createNewChat();
+        }
+        renderChatList();
+        renderChat(activeChat);
+        
+        autoGrow(document.getElementById('messageInput'));
+        const savedApiKey = localStorage.getItem('openAIKey');
+        if (savedApiKey) {
+            showApiKeyAddedMessage();
+        } else {
+            showInputField();
+        }
+    };
+        // Listen for clicks on copy buttons
+    document.addEventListener('click', function(event) {
+        // Check if the clicked element has the 'copy-btn' class
+        if (event.target.classList.contains('copy-btn')) {
+            // Find the preceding <pre> sibling of the clicked copy button
+            var preElement = event.target.previousElementSibling;
+
+            // Ensure the element is a <pre> element
+            if (preElement && preElement.tagName === 'PRE') {
+                // Get the text content of the <pre> element
+                var codeToCopy = preElement.textContent;
+
+                // Use the Clipboard API to copy the text
+                navigator.clipboard.writeText(codeToCopy).then(function() {
+                    console.log('Text copied to clipboard');
+                    // Optionally, show a message to the user indicating the text was copied
+                }).catch(function(err) {
+                    console.error('Error copying text to clipboard: ', err);
+                });
+            }
+        }
+    });
+
+</script>
+
+</body>
+</html>
