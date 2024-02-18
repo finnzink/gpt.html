@@ -127,22 +127,22 @@
         margin-bottom: 5px; /* Add some space below the header */
     }
     .pre-container {
-    display: flex;
-    align-items: flex-start; /* Aligns items at the start of the container vertically */
-    position: relative;
-}
+        display: flex;
+        align-items: flex-start; /* Aligns items at the start of the container vertically */
+        position: relative;
+    }
 
-.pre-container pre {
-        display: inline-block; /* Or 'inline', but 'inline-block' is often more practical */
-    white-space: pre-wrap;
-}
+    .pre-container pre {
+            display: inline-block; /* Or 'inline', but 'inline-block' is often more practical */
+        white-space: pre-wrap;
+    }
 
-.copy-btn {
-    cursor: pointer; /* Changes the cursor to pointer when hovering over the button */
-    align-self: flex-start; /* Aligns the button to the top of the container */
-    padding: 10px 5px; /* Optional: Adds some padding inside the button for better appearance */
-    /* Additional styling for the button as needed */
-}
+    .copy-btn {
+        cursor: pointer; /* Changes the cursor to pointer when hovering over the button */
+        align-self: flex-start; /* Aligns the button to the top of the container */
+        padding: 10px 5px; /* Optional: Adds some padding inside the button for better appearance */
+        /* Additional styling for the button as needed */
+    }
     .navigation {
         font-family: monospace;
         font-size: small;
@@ -393,6 +393,7 @@
         input.value = ''; // Clear input field
         renderChatList();
         renderChat(0); // Refresh the chat UI
+        autoGrow(input);
 
         await sendToOpenAI(userMessage); // Trigger the assistant's response
     }
